@@ -3,6 +3,7 @@ package com.arenaweather.app.data.api
 import com.arenaweather.app.data.rules.RuleDefinition
 import com.arenaweather.app.data.rules.WireJson
 import io.ktor.client.HttpClient
+import io.ktor.client.HttpClientConfig
 import io.ktor.client.call.body
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.plugins.HttpTimeout
@@ -38,7 +39,7 @@ class WeatherApi(
     engine: HttpClientEngine? = null,
     debugLogging: Boolean = false,
 ) {
-    private val client: HttpClient = (engine?.let { HttpClient(it) } ?: HttpClient()).config {
+    private val configure: HttpClientConfig<*>.() -> Unit = {
         expectSuccess = false
         install(ContentNegotiation) { json(WireJson) }
         install(HttpTimeout) {
@@ -47,6 +48,7 @@ class WeatherApi(
         }
         if (debugLogging) install(Logging) { level = LogLevel.INFO }
     }
+    private val client: HttpClient = if (engine != null) HttpClient(engine, configure) else HttpClient(configure)
 
     private fun url(path: String): String = baseUrl().trimEnd('/') + path
 
