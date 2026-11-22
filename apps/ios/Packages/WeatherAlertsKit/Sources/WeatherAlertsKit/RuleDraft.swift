@@ -112,6 +112,11 @@ public struct DraftErrors: Error, Equatable, Sendable {
         if !nodes.isEmpty { all.append(nodes.count == 1 ? "1 condition needs attention" : "\(nodes.count) conditions need attention") }
         return all.joined(separator: "\n")
     }
+
+    public init(messages: [String] = [], nodes: [UUID: String] = [:]) {
+        self.messages = messages
+        self.nodes = nodes
+    }
 }
 
 @Observable

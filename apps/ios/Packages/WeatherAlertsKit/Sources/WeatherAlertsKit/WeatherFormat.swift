@@ -5,7 +5,12 @@ public enum WeatherFormat {
     public struct CodeDescription: Hashable, Sendable {
         public let text: String
         public let symbol: String
+    
+    public init(text: String, symbol: String) {
+        self.text = text
+        self.symbol = symbol
     }
+}
 
     /// WMO weather interpretation code → text + SF Symbol name.
     public static func describe(code: Double?, isDay: Bool = true) -> CodeDescription {

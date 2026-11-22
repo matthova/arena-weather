@@ -58,7 +58,13 @@ public final class WeatherAPIClient: @unchecked Sendable {
         public let status: Int
         public let data: Data
         public let headers: [String: String]
+    
+    public init(status: Int, data: Data, headers: [String: String]) {
+        self.status = status
+        self.data = data
+        self.headers = headers
     }
+}
 
     private struct WrappedError: Decodable { struct Body: Decodable { let code: String; let message: String }; let error: Body }
     private struct FlatError: Decodable { let code: String?; let message: String? }
@@ -213,7 +219,13 @@ public final class WeatherAPIClient: @unchecked Sendable {
         public var channel: String
         public var token: String
         public var userAgent: String?
+    
+    public init(channel: String, token: String, userAgent: String? = nil) {
+        self.channel = channel
+        self.token = token
+        self.userAgent = userAgent
     }
+}
 
     public func listPushSubscriptions() async throws -> [PushSubscriptionInfo] {
         let r: PushListResponse = try await request(.GET, "/api/push/subscriptions")
