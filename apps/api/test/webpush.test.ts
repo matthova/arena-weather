@@ -7,6 +7,7 @@ import {
   decryptPayload,
   encryptPayload,
   generateVapidKeys,
+  pushTopic,
   sendWebPush,
 } from "../src/push/webpush.js";
 
@@ -221,5 +222,19 @@ describe("web push on WebCrypto (runs inside workerd)", () => {
       body: "soon",
       url: "/rules/1",
     });
+  });
+});
+
+describe("pushTopic", () => {
+  it("keeps short base64url tags as they are", () => {
+    expect(pushTopic("t1")).toBe("t1");
+    expect(pushTopic("rule_abc-DEF")).toBe("rule_abc-DEF");
+  });
+  it("trims tags to the 32 base64url characters RFC 8030 allows", () => {
+    const topic = pushTopic("rule-596b9224-7a4e-4d63-9319-4af6431aed02");
+    expect(topic).toBe("rule-596b9224-7a4e-4d63-9319-4af");
+    expect(topic?.length).toBe(32);
+    expect(pushTopic("a b/c+d=")).toBe("abcd");
+    expect(pushTopic("///")).toBeUndefined();
   });
 });

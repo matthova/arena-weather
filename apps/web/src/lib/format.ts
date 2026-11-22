@@ -57,9 +57,14 @@ function fmt(timeZone: string, options: Intl.DateTimeFormatOptions) {
   }
 }
 
-/** "14:00" in the place's timezone. */
-export function formatHour(unix: number, timeZone: string): string {
+/** "14:00" / "2:00 PM" in the place's timezone. */
+export function formatTime(unix: number, timeZone: string): string {
   return fmt(timeZone, { hour: "numeric", minute: "2-digit" }).format(new Date(unix * 1000));
+}
+
+/** "14" / "2 PM": the short form for the hourly strip. */
+export function formatHour(unix: number, timeZone: string): string {
+  return fmt(timeZone, { hour: "numeric" }).format(new Date(unix * 1000));
 }
 
 /** "Mon", "Tue" … (with "Today" for the current local day). */

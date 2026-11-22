@@ -20,6 +20,11 @@
     "deploy": {
       "cache": false,
       "dependsOn": ["build", "^build"]
+    },
+    "@arena-weather/web#deploy": {
+      "cache": false,
+      // The web Worker binds to the API Worker by name, so the API has to exist first.
+      "dependsOn": ["build", "@arena-weather/api#deploy"]
     }
   }
 }

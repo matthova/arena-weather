@@ -24,7 +24,12 @@ export async function notifyUser(
         message,
       );
       if (r.ok) result.delivered++;
-      else result.failed++;
+      else {
+        result.failed++;
+        console.warn(
+          `push service answered ${r.status} for subscription ${sub.id}${r.body ? `: ${r.body.slice(0, 300)}` : ""}`,
+        );
+      }
       if (r.gone) await services.repo.push.deleteById(sub.id);
       else await services.repo.push.markResult(sub.id, r.ok);
     } catch (e) {

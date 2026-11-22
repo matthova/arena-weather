@@ -7,6 +7,7 @@ import {
   formatHour,
   formatNumber,
   formatTemp,
+  formatTime,
   hourlyValue,
   upcomingHours,
 } from "~/lib/format";
@@ -33,7 +34,7 @@ export function ForecastView({
           <h2 style={{ marginBottom: 0 }}>{placeLabel}</h2>
           <div className="muted small">
             {cur
-              ? `${curCode.text} · updated ${formatHour(cur.time, tz)}`
+              ? `${curCode.text} · updated ${formatTime(cur.time, tz)}`
               : "Current conditions unavailable"}
           </div>
           <div className="row" style={{ marginTop: "0.5rem" }}>

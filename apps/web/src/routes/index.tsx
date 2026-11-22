@@ -78,7 +78,7 @@ function ForecastPage() {
 
   return (
     <div className="stack">
-      <PlaceSearch onSelect={select} initialQuery={place?.label ?? ""} />
+      <PlaceSearch key={place?.label ?? ""} onSelect={select} initialQuery={place?.label ?? ""} />
       {!place && (
         <div className="hero">
           <h1>What's the weather where you care?</h1>

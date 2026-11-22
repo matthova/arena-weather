@@ -39,11 +39,15 @@ describe("<RuleBuilder>", () => {
     expect(conds).toHaveLength(2);
     const [first, second] = conds;
     if (!first || !second) throw new Error("conditions missing");
-    fireEvent.change(within(first).getByLabelText("Variable"), { target: { value: "wind_gusts_10m" } });
+    fireEvent.change(within(first).getByLabelText("Variable"), {
+      target: { value: "wind_gusts_10m" },
+    });
     fireEvent.change(within(first).getByLabelText("Comparator"), { target: { value: ">" } });
     fireEvent.change(within(first).getByLabelText("Value"), { target: { value: "50" } });
     fireEvent.change(within(second).getByLabelText("Granularity"), { target: { value: "daily" } });
-    fireEvent.change(within(second).getByLabelText("Variable"), { target: { value: "weather_code" } });
+    fireEvent.change(within(second).getByLabelText("Variable"), {
+      target: { value: "weather_code" },
+    });
     fireEvent.change(within(second).getByLabelText("Comparator"), { target: { value: "==" } });
     fireEvent.change(within(second).getByLabelText("Value"), { target: { value: "95" } });
 
@@ -59,13 +63,34 @@ describe("<RuleBuilder>", () => {
         type: "group",
         operator: "all",
         children: [
-          { type: "condition", granularity: "hourly", variable: "precipitation_probability", comparator: ">=", value: 60, quantifier: "any" },
+          {
+            type: "condition",
+            granularity: "hourly",
+            variable: "precipitation_probability",
+            comparator: ">=",
+            value: 60,
+            quantifier: "any",
+          },
           {
             type: "group",
             operator: "any",
             children: [
-              { type: "condition", granularity: "hourly", variable: "wind_gusts_10m", comparator: ">", value: 50, quantifier: "any" },
-              { type: "condition", granularity: "daily", variable: "weather_code", comparator: "==", value: 95, quantifier: "any" },
+              {
+                type: "condition",
+                granularity: "hourly",
+                variable: "wind_gusts_10m",
+                comparator: ">",
+                value: 50,
+                quantifier: "any",
+              },
+              {
+                type: "condition",
+                granularity: "daily",
+                variable: "weather_code",
+                comparator: "==",
+                value: 95,
+                quantifier: "any",
+              },
             ],
           },
         ],

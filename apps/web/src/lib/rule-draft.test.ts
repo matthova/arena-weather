@@ -26,15 +26,28 @@ describe("rule draft -> shared rule JSON", () => {
   it("serializes nested all/any groups to the core schema", () => {
     const inner = newGroup("any", [
       newCondition({ variable: "wind_gusts_10m", comparator: ">", value: "50" }),
-      newCondition({ granularity: "daily", variable: "weather_code", comparator: "==", value: "95" }),
+      newCondition({
+        granularity: "daily",
+        variable: "weather_code",
+        comparator: "==",
+        value: "95",
+      }),
     ]);
-    let root = newGroup("all", [newCondition({ variable: "precipitation_probability", comparator: ">=", value: "60" })]);
+    let root = newGroup("all", [
+      newCondition({ variable: "precipitation_probability", comparator: ">=", value: "60" }),
+    ]);
     root = addChild(root, root.key, inner);
     const draft = {
       ...emptyDraft(berlin),
       name: "Wet and windy evening",
       root,
-      window: { hoursAhead: "12", daysAhead: "", useHoursOfDay: true, hoursFrom: "17", hoursTo: "22" },
+      window: {
+        hoursAhead: "12",
+        daysAhead: "",
+        useHoursOfDay: true,
+        hoursFrom: "17",
+        hoursTo: "22",
+      },
     };
     const r = toDefinition(draft);
     expect(r.ok).toBe(true);
@@ -93,12 +106,25 @@ describe("rule draft -> shared rule JSON", () => {
         type: "group",
         operator: "any",
         children: [
-          { type: "condition", granularity: "hourly", variable: "temperature_2m", comparator: "<=", value: 0 },
+          {
+            type: "condition",
+            granularity: "hourly",
+            variable: "temperature_2m",
+            comparator: "<=",
+            value: 0,
+          },
           {
             type: "group",
             operator: "all",
             children: [
-              { type: "condition", granularity: "daily", variable: "temperature_2m_min", comparator: "<", value: 2, quantifier: "all" },
+              {
+                type: "condition",
+                granularity: "daily",
+                variable: "temperature_2m_min",
+                comparator: "<",
+                value: 2,
+                quantifier: "all",
+              },
             ],
           },
         ],
@@ -123,7 +149,13 @@ describe("rule draft -> shared rule JSON", () => {
       ...emptyDraft(berlin),
       name: "x",
       root: newGroup("all", [c]),
-      window: { hoursAhead: "500", daysAhead: "", useHoursOfDay: false, hoursFrom: "", hoursTo: "" },
+      window: {
+        hoursAhead: "500",
+        daysAhead: "",
+        useHoursOfDay: false,
+        hoursFrom: "",
+        hoursTo: "",
+      },
     };
     const r = toDefinition(draft);
     expect(r.ok).toBe(false);
@@ -134,7 +166,9 @@ describe("rule draft -> shared rule JSON", () => {
     const a = newCondition({ value: "1" });
     const g = newGroup("any", [newCondition({ value: "2" })]);
     const root = newGroup("all", [a, g]);
-    const updated = updateNode(root, a.key, (n) => (n.kind === "condition" ? { ...n, value: "9" } : n));
+    const updated = updateNode(root, a.key, (n) =>
+      n.kind === "condition" ? { ...n, value: "9" } : n,
+    );
     expect(updated).not.toBe(root);
     expect(updated.children[0]).toMatchObject({ value: "9" });
     expect(root.children[0]).toMatchObject({ value: "1" });
@@ -150,13 +184,31 @@ describe("rule draft -> shared rule JSON", () => {
         type: "group",
         operator: "all",
         children: [
-          { type: "condition", granularity: "hourly", variable: "precipitation_probability", comparator: ">=", value: 60 },
+          {
+            type: "condition",
+            granularity: "hourly",
+            variable: "precipitation_probability",
+            comparator: ">=",
+            value: 60,
+          },
           {
             type: "group",
             operator: "any",
             children: [
-              { type: "condition", granularity: "hourly", variable: "wind_gusts_10m", comparator: ">", value: 50 },
-              { type: "condition", granularity: "daily", variable: "weather_code", comparator: "==", value: 95 },
+              {
+                type: "condition",
+                granularity: "hourly",
+                variable: "wind_gusts_10m",
+                comparator: ">",
+                value: 50,
+              },
+              {
+                type: "condition",
+                granularity: "daily",
+                variable: "weather_code",
+                comparator: "==",
+                value: 95,
+              },
             ],
           },
         ],
@@ -166,6 +218,8 @@ describe("rule draft -> shared rule JSON", () => {
       "Precipitation chance >= 60 % and (Wind gusts (10 m) > 50 km/h or Weather code (WMO) == 95)",
     );
     expect(describeWindow(undefined)).toBe("next 24 h / 7 days");
-    expect(describeWindow({ hoursAhead: 12, hoursOfDay: { from: 17, to: 22 } })).toBe("next 12 h, 17:00–22:59");
+    expect(describeWindow({ hoursAhead: 12, hoursOfDay: { from: 17, to: 22 } })).toBe(
+      "next 12 h, 17:00–22:59",
+    );
   });
 });

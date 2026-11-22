@@ -255,6 +255,16 @@ export async function decryptPayload(
 
 // --- Sending -------------------------------------------------------------------
 
+/**
+ * RFC 8030 §5.4: a Topic is at most 32 characters from the base64url alphabet. Push services
+ * (Mozilla autopush, for one) reject anything longer with 400, so tags like "rule-<uuid>" are
+ * trimmed to a valid topic (the prefix of a v4 UUID is still unique enough to collapse duplicates).
+ */
+export function pushTopic(tag: string): string | undefined {
+  const cleaned = tag.replace(/[^A-Za-z0-9_-]/g, "").slice(0, 32);
+  return cleaned.length > 0 ? cleaned : undefined;
+}
+
 /** Encrypt and POST one message to a subscription's push service. */
 export async function sendWebPush(
   subscription: PushSubscriptionKeys,
@@ -272,7 +282,8 @@ export async function sendWebPush(
     ttl: String(options.ttl ?? 4 * 3600),
     urgency: options.urgency ?? "normal",
   };
-  if (options.topic) headers.topic = options.topic;
+  const topic = options.topic ? pushTopic(options.topic) : undefined;
+  if (topic) headers.topic = topic;
   const res = await (options.fetch ?? fetch)(subscription.endpoint, {
     method: "POST",
     headers,

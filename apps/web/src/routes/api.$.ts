@@ -6,7 +6,8 @@ import { createFileRoute } from "@tanstack/react-router";
  * Auth's session cookie is a plain first-party cookie and no CORS is involved.
  *
  * - Production: over the `API` service binding (wrangler.jsonc "services"), Worker to Worker.
- * - Local dev: no binding is running, so plain fetch to API_ORIGIN (http://localhost:8787).
+ * - Local dev (`vite dev`): plain fetch to API_ORIGIN (http://localhost:8787, the API's `wrangler dev`),
+ *   so the two dev servers need no shared registry and either can be restarted on its own.
  */
 type Bindings = { API?: Fetcher; API_ORIGIN?: string };
 
@@ -33,7 +34,8 @@ async function forward({ request }: { request: Request }): Promise<Response> {
   // Streaming bodies need duplex on fetch implementations that enforce it.
   (init as RequestInit & { duplex?: "half" }).duplex = "half";
 
-  const fetcher = bindings.API ? bindings.API.fetch.bind(bindings.API) : fetch;
+  const useBinding = Boolean(bindings.API) && !import.meta.env.DEV;
+  const fetcher = useBinding && bindings.API ? bindings.API.fetch.bind(bindings.API) : fetch;
   let upstream: Response;
   try {
     upstream = await fetcher(target.toString(), init);
