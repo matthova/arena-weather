@@ -1,11 +1,12 @@
 name: Deploy
 
-# Deploys the API Worker (and applies D1 migrations) on every push to main.
+# Deploys both Workers on every push to main: the API (after applying D1 migrations), then the web
+# app (its service binding needs the API Worker to exist; turbo orders the two).
 # Required repository secrets (Settings → Secrets → Actions):
 #   CLOUDFLARE_API_TOKEN   - token with Workers Scripts:Edit, D1:Edit (template "Edit Cloudflare Workers" + D1)
 #   CLOUDFLARE_ACCOUNT_ID  - the account id shown in the Cloudflare dashboard
 # Worker runtime secrets (BETTER_AUTH_SECRET, GOOGLE_*, RESEND_API_KEY, VAPID_*) are set once with
-# `wrangler secret put` (see README) and are not touched by this workflow.
+# `wrangler secret put` (see README) and are not touched by this workflow. The web Worker has none.
 
 on:
   push:
@@ -18,7 +19,7 @@ concurrency:
 
 jobs:
   deploy:
-    name: Deploy API to Cloudflare
+    name: Deploy API and web to Cloudflare
     runs-on: ubuntu-latest
     environment: production
     steps:
@@ -31,7 +32,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - run: pnpm test
-      - name: Apply D1 migrations and deploy the Worker
+      - name: Apply D1 migrations, deploy the API Worker, then the web Worker
         run: pnpm run deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

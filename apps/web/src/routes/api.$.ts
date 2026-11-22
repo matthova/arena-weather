@@ -17,7 +17,10 @@ async function forward({ request }: { request: Request }): Promise<Response> {
   const bindings = env as unknown as Bindings;
   const origin = (bindings.API_ORIGIN ?? "http://localhost:8787").replace(/\/$/, "");
   const incoming = new URL(request.url);
-  const target = new URL(incoming.pathname + incoming.search, origin);
+  const useBinding = Boolean(bindings.API) && !import.meta.env.DEV;
+  // Over the binding the URL's host does not route anything, so keep the public one: Better Auth's
+  // baseURL (API_URL) is this origin in production. In dev, point at the API's own dev server.
+  const target = useBinding ? incoming : new URL(incoming.pathname + incoming.search, origin);
 
   const headers = new Headers(request.headers);
   for (const h of HOP_BY_HOP) headers.delete(h);
@@ -34,7 +37,6 @@ async function forward({ request }: { request: Request }): Promise<Response> {
   // Streaming bodies need duplex on fetch implementations that enforce it.
   (init as RequestInit & { duplex?: "half" }).duplex = "half";
 
-  const useBinding = Boolean(bindings.API) && !import.meta.env.DEV;
   const fetcher = useBinding && bindings.API ? bindings.API.fetch.bind(bindings.API) : fetch;
   let upstream: Response;
   try {
