@@ -517,7 +517,7 @@ select.input:focus {
 }
 .condition {
   display: grid;
-  grid-template-columns: 7rem minmax(10rem, 1fr) 5rem 6rem auto;
+  grid-template-columns: 7rem minmax(10rem, 1fr) 8rem 6rem auto;
   gap: 0.4rem;
   align-items: center;
 }
