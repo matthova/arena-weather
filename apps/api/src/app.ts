@@ -9,6 +9,7 @@ import { internalRoutes } from "./routes/internal.js";
 import { metaRoutes } from "./routes/meta.js";
 import { placesRoutes } from "./routes/places.js";
 import { pushRoutes } from "./routes/push.js";
+import { pushDeviceRoutes } from "./routes/push-devices.js";
 import { rulesRoutes } from "./routes/rules.js";
 import { createServices, memoize, type Services, type ServicesFactory } from "./services.js";
 
@@ -58,6 +59,7 @@ export function createApp(factory: ServicesFactory = memoize((env) => createServ
   app.route("/api/places", placesRoutes);
   app.route("/api/forecast", forecastRoutes);
   app.route("/api/rules", rulesRoutes);
+  app.route("/api/push/devices", pushDeviceRoutes);
   app.route("/api/push", pushRoutes);
   app.route("/api/internal", internalRoutes);
 

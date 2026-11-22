@@ -5,6 +5,7 @@ import { createRepo } from "../src/db/repo.js";
 import type { Env } from "../src/env.js";
 import type { EmailMessage, EmailSender } from "../src/lib/email.js";
 import type { ForecastProvider, ForecastRequest } from "../src/providers/forecast.js";
+import type { FcmSender } from "../src/push/fcm.js";
 import type { PushMessage, PushSender } from "../src/push/sender.js";
 import type { PushSubscriptionKeys } from "../src/push/webpush.js";
 import { createServices, type Services } from "../src/services.js";
@@ -89,6 +90,22 @@ export function fakePush(opts: { fail?: (endpoint: string) => number } = {}) {
   return sender;
 }
 
+/** An FCM sender that records what it was asked to send; `fail` picks a status per device token. */
+export function fakeFcm(opts: { fail?: (token: string) => number; enabled?: boolean } = {}) {
+  const sent: { token: string; message: PushMessage }[] = [];
+  const sender: FcmSender & { sent: typeof sent } = {
+    enabled: opts.enabled ?? true,
+    projectId: "fake-project",
+    sent,
+    async send(token, message) {
+      sent.push({ token, message });
+      const status = opts.fail?.(token) ?? 200;
+      return { ok: status < 300, status, gone: status === 404 };
+    },
+  };
+  return sender;
+}
+
 export function fakeEmail() {
   const sent: EmailMessage[] = [];
   const sender: EmailSender & { sent: EmailMessage[] } = {
@@ -105,23 +122,28 @@ export interface TestWorld {
   services: Services;
   provider: ReturnType<typeof fakeProvider>;
   push: ReturnType<typeof fakePush>;
+  fcm: ReturnType<typeof fakeFcm>;
   email: ReturnType<typeof fakeEmail>;
   env: Env;
 }
 
-export function makeWorld(overrides: { env?: Partial<Env>; push?: PushSender } = {}): TestWorld {
+export function makeWorld(
+  overrides: { env?: Partial<Env>; push?: PushSender; fcm?: ReturnType<typeof fakeFcm> } = {},
+): TestWorld {
   const testEnv: Env = { ...env, ...overrides.env };
   const provider = fakeProvider();
   const push = fakePush();
+  const fcm = overrides.fcm ?? fakeFcm();
   const email = fakeEmail();
   const services = createServices(testEnv, {
     provider,
     push: overrides.push ?? push,
+    fcm,
     email,
     repo: createRepo(testEnv.DB),
   });
   const app = createApp(() => services);
-  return { app, services, provider, push, email, env: testEnv };
+  return { app, services, provider, push, fcm, email, env: testEnv };
 }
 
 let userCounter = 0;

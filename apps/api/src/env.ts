@@ -23,6 +23,8 @@ export interface Env {
   VAPID_PUBLIC_KEY?: string;
   VAPID_PRIVATE_KEY?: string;
   CHECKER_TOKEN?: string;
+  /** Firebase service-account key file (the whole JSON) for FCM HTTP v1; unset = no Android push. */
+  FCM_SERVICE_ACCOUNT?: string;
 }
 
 export function trustedOrigins(env: Env): string[] {

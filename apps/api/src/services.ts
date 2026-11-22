@@ -4,6 +4,7 @@ import type { Env } from "./env.js";
 import { createEmailSender, type EmailSender } from "./lib/email.js";
 import type { ForecastProvider } from "./providers/forecast.js";
 import { createOpenMeteoProvider } from "./providers/open-meteo.js";
+import { type FcmSender, fcmSenderFromEnv } from "./push/fcm-sender.js";
 import { createPushSender, type PushSender } from "./push/sender.js";
 
 /** Everything the routes and the checker depend on; tests swap in fakes. */
@@ -14,6 +15,8 @@ export interface Services {
   email: EmailSender;
   provider: ForecastProvider;
   push: PushSender;
+  /** Firebase Cloud Messaging for Android devices (channel "fcm"). */
+  fcm: FcmSender;
 }
 
 export type ServicesFactory = (env: Env) => Services;
@@ -32,6 +35,7 @@ export function createServices(env: Env, overrides: Partial<Omit<Services, "env"
         geocodingUrl: env.OPEN_METEO_GEOCODING_URL,
       }),
     push: overrides.push ?? createPushSender(env),
+    fcm: overrides.fcm ?? fcmSenderFromEnv(env),
   };
 }
 

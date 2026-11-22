@@ -16,5 +16,11 @@ RESEND_API_KEY=
 VAPID_PUBLIC_KEY=
 VAPID_PRIVATE_KEY=
 
+# Android push (Firebase Cloud Messaging, HTTP v1). The whole service-account JSON key file on one
+# line (Firebase console → Project settings → Service accounts → Generate new private key); `\n`
+# inside private_key stays as the two characters \n. Leave empty: Android devices register but
+# receive nothing (GET /api/config reports pushChannels.fcm = false).
+FCM_SERVICE_ACCOUNT=
+
 # Optional: protects POST /api/internal/run-checker (manual trigger of the cron job).
 CHECKER_TOKEN=

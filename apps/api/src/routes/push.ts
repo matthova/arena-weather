@@ -20,11 +20,13 @@ const onInvalid = (r: { success: boolean; error?: { issues: unknown } }) => {
 
 const publicSub = (s: {
   id: string;
+  channel: string;
   endpoint: string;
   createdAt: string;
   userAgent: string | null;
 }) => ({
   id: s.id,
+  channel: s.channel,
   endpoint: s.endpoint,
   createdAt: s.createdAt,
   userAgent: s.userAgent,

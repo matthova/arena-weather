@@ -1,4 +1,5 @@
 import { betterAuth } from "better-auth";
+import { bearer } from "better-auth/plugins";
 import { D1Dialect } from "kysely-d1";
 import { type Env, trustedOrigins } from "./env.js";
 import type { EmailSender } from "./lib/email.js";
@@ -21,6 +22,9 @@ export function createAuth(env: Env, email: EmailSender) {
     baseURL: apiUrl,
     basePath: "/api/auth",
     secret: env.BETTER_AUTH_SECRET,
+    // Native clients: sign-in responses carry the session token in `set-auth-token`; they send it
+    // back as `Authorization: Bearer <token>` instead of the cookie (web keeps using the cookie).
+    plugins: [bearer()],
     database: { dialect: new D1Dialect({ database: env.DB }), type: "sqlite" },
     trustedOrigins: [appUrl, apiUrl, ...trustedOrigins(env)],
     emailAndPassword: {

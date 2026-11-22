@@ -19,10 +19,13 @@ export async function notifyUser(
   for (const sub of subs) {
     result.attempted++;
     try {
-      const r = await services.push.send(
-        { endpoint: sub.endpoint, p256dh: sub.p256dh, auth: sub.auth },
-        message,
-      );
+      const r =
+        sub.channel === "fcm"
+          ? await services.fcm.send(sub.endpoint, message)
+          : await services.push.send(
+              { endpoint: sub.endpoint, p256dh: sub.p256dh, auth: sub.auth },
+              message,
+            );
       if (r.ok) result.delivered++;
       else {
         result.failed++;

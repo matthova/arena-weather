@@ -46,6 +46,9 @@ export function publicRule(rule: StoredRule): Rule {
 export interface PushSubscriptionRow {
   id: string;
   userId: string;
+  /** "webpush" | "fcm" | "apns" (see migration 0003 and db/push-devices.ts) */
+  channel: string;
+  /** Web push: the push-service URL. Native channels: the device token. */
   endpoint: string;
   p256dh: string;
   auth: string;
