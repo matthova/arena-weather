@@ -7,6 +7,7 @@ import { handleError } from "./lib/http.js";
 import { forecastRoutes } from "./routes/forecast.js";
 import { internalRoutes } from "./routes/internal.js";
 import { metaRoutes } from "./routes/meta.js";
+import { nativeRoutes } from "./routes/native.js";
 import { placesRoutes } from "./routes/places.js";
 import { pushRoutes } from "./routes/push.js";
 import { pushDeviceRoutes } from "./routes/push-devices.js";
@@ -62,6 +63,7 @@ export function createApp(factory: ServicesFactory = memoize((env) => createServ
   app.route("/api/push/devices", pushDeviceRoutes);
   app.route("/api/push", pushRoutes);
   app.route("/api/internal", internalRoutes);
+  app.route("/api/native", nativeRoutes);
 
   app.notFound((c) => c.json({ error: { code: "not_found", message: "Not found" } }, 404));
   return app;

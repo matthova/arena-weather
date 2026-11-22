@@ -18,7 +18,7 @@ export const metaRoutes = new Hono<AppEnv>()
       googleSignIn: Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET),
       push: c.get("services").push.enabled,
       /** Native push channels this deployment can deliver to (secrets configured). */
-      pushChannels: { fcm: c.get("services").fcm.enabled },
+      pushChannels: { fcm: c.get("services").fcm.enabled, apns: c.get("services").apns.enabled },
       devMailbox: devMailboxEnabled(env),
     });
   })

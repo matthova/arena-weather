@@ -14,6 +14,12 @@ export interface Env {
   VAPID_SUBJECT: string;
   OPEN_METEO_FORECAST_URL: string;
   OPEN_METEO_GEOCODING_URL: string;
+  /** Custom URL schemes of native apps allowed to receive a sign-in one-time token (GET /api/native/handoff). */
+  NATIVE_REDIRECT_SCHEMES?: string;
+  /** iOS/macOS app bundle id = the APNs topic (apps/ios/project.yml). Unset = APNs off. */
+  APNS_BUNDLE_ID?: string;
+  /** APNs host tried first: "production" (default) or "sandbox"; the other one is retried on BadDeviceToken. */
+  APNS_ENVIRONMENT?: string;
 
   // secrets
   BETTER_AUTH_SECRET: string;
@@ -25,6 +31,10 @@ export interface Env {
   CHECKER_TOKEN?: string;
   /** Firebase service-account key file (the whole JSON) for FCM HTTP v1; unset = no Android push. */
   FCM_SERVICE_ACCOUNT?: string;
+  /** APNs token-based auth: Apple Developer team id, key id of the .p8 key, and the .p8 file's PEM contents. */
+  APNS_TEAM_ID?: string;
+  APNS_KEY_ID?: string;
+  APNS_PRIVATE_KEY?: string;
 }
 
 export function trustedOrigins(env: Env): string[] {

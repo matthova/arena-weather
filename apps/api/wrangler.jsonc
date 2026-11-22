@@ -27,6 +27,12 @@
     "EMAIL_FROM": "Weather alerts <alerts@example.com>",
     "VAPID_SUBJECT": "mailto:alerts@example.com",
     "OPEN_METEO_FORECAST_URL": "https://api.open-meteo.com/v1/forecast",
-    "OPEN_METEO_GEOCODING_URL": "https://geocoding-api.open-meteo.com/v1/search"
+    "OPEN_METEO_GEOCODING_URL": "https://geocoding-api.open-meteo.com/v1/search",
+    // APNs topic = the iOS app's bundle id (apps/ios/project.yml, WEATHER_ALERTS_BUNDLE_ID). Empty = APNs off.
+    "APNS_BUNDLE_ID": "",
+    // APNs host tried first ("production" | "sandbox"); the other is retried once on BadDeviceToken.
+    "APNS_ENVIRONMENT": "production",
+    // URL schemes native apps register for the Google sign-in hand-off (GET /api/native/handoff).
+    "NATIVE_REDIRECT_SCHEMES": "weatheralerts"
   }
 }

@@ -41,7 +41,8 @@ export const pushDeviceRoutes = new Hono<AppEnv>()
           userAgent: row.userAgent,
         },
         /** Whether the API can actually deliver on this channel (the matching secret is configured). */
-        deliverable: channel === "fcm" ? c.get("services").fcm.enabled : false,
+        deliverable:
+          channel === "fcm" ? c.get("services").fcm.enabled : c.get("services").apns.enabled,
       },
       201,
     );

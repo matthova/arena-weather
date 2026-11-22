@@ -22,5 +22,14 @@ VAPID_PRIVATE_KEY=
 # receive nothing (GET /api/config reports pushChannels.fcm = false).
 FCM_SERVICE_ACCOUNT=
 
+# iOS/macOS push (APNs, token-based auth). Apple Developer → Keys → create an "Apple Push Notifications
+# service (APNs)" key and download the .p8 once. APNS_PRIVATE_KEY is the whole PEM file (multi-line is
+# fine here; for `wrangler secret put` pipe the file in, see README → iOS app). APNS_BUNDLE_ID (the
+# app's bundle id = APNs topic) and APNS_ENVIRONMENT are plain vars in wrangler.jsonc. Leave empty:
+# iOS devices register but receive nothing (GET /api/config reports pushChannels.apns = false).
+APNS_TEAM_ID=
+APNS_KEY_ID=
+APNS_PRIVATE_KEY=
+
 # Optional: protects POST /api/internal/run-checker (manual trigger of the cron job).
 CHECKER_TOKEN=

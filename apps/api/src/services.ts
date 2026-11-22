@@ -4,6 +4,7 @@ import type { Env } from "./env.js";
 import { createEmailSender, type EmailSender } from "./lib/email.js";
 import type { ForecastProvider } from "./providers/forecast.js";
 import { createOpenMeteoProvider } from "./providers/open-meteo.js";
+import { type ApnsSender, apnsSenderFromEnv } from "./push/apns-sender.js";
 import { type FcmSender, fcmSenderFromEnv } from "./push/fcm-sender.js";
 import { createPushSender, type PushSender } from "./push/sender.js";
 
@@ -17,6 +18,8 @@ export interface Services {
   push: PushSender;
   /** Firebase Cloud Messaging for Android devices (channel "fcm"). */
   fcm: FcmSender;
+  /** Apple Push Notification service for iOS/macOS devices (channel "apns"). */
+  apns: ApnsSender;
 }
 
 export type ServicesFactory = (env: Env) => Services;
@@ -36,6 +39,7 @@ export function createServices(env: Env, overrides: Partial<Omit<Services, "env"
       }),
     push: overrides.push ?? createPushSender(env),
     fcm: overrides.fcm ?? fcmSenderFromEnv(env),
+    apns: overrides.apns ?? apnsSenderFromEnv(env),
   };
 }
 

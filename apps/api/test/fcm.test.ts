@@ -323,7 +323,7 @@ describe("/api/push/devices (native device tokens)", () => {
     expect(r.status).toBe(201);
     expect(r.data.deliverable).toBe(false);
     const config = await api("GET", "/api/config");
-    expect(config.data.pushChannels).toEqual({ fcm: false });
+    expect(config.data.pushChannels).toMatchObject({ fcm: false });
     expect(config.data.appUrl).toBe("http://localhost:3000");
   });
 

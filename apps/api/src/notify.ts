@@ -22,10 +22,12 @@ export async function notifyUser(
       const r =
         sub.channel === "fcm"
           ? await services.fcm.send(sub.endpoint, message)
-          : await services.push.send(
-              { endpoint: sub.endpoint, p256dh: sub.p256dh, auth: sub.auth },
-              message,
-            );
+          : sub.channel === "apns"
+            ? await services.apns.send(sub.endpoint, message)
+            : await services.push.send(
+                { endpoint: sub.endpoint, p256dh: sub.p256dh, auth: sub.auth },
+                message,
+              );
       if (r.ok) result.delivered++;
       else {
         result.failed++;

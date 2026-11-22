@@ -1,0 +1,159 @@
+import Foundation
+
+// Response shapes of the API (packages/core/src/client.ts) that are not rules, forecasts or evaluations.
+
+public struct APIUser: Codable, Hashable, Identifiable, Sendable {
+    public var id: String
+    public var email: String
+    public var name: String
+    public var image: String?
+    public var emailVerified: Bool
+    public var createdAt: String?
+    public var updatedAt: String?
+
+    public init(id: String, email: String, name: String, image: String? = nil, emailVerified: Bool,
+                createdAt: String? = nil, updatedAt: String? = nil) {
+        self.id = id
+        self.email = email
+        self.name = name
+        self.image = image
+        self.emailVerified = emailVerified
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+    }
+}
+
+public struct MeResponse: Codable, Sendable {
+    public var user: APIUser?
+}
+
+public struct PushChannels: Codable, Hashable, Sendable {
+    public var webpush: Bool
+    public var apns: Bool
+    public var fcm: Bool
+
+    public init(webpush: Bool = false, apns: Bool = false, fcm: Bool = false) {
+        self.webpush = webpush
+        self.apns = apns
+        self.fcm = fcm
+    }
+}
+
+/// `GET /api/config`: what this deployment offers.
+public struct ServerConfig: Codable, Hashable, Sendable {
+    public var appName: String
+    public var googleSignIn: Bool
+    /// Web push (VAPID) configured.
+    public var push: Bool
+    /// Absent on an API older than this app: treat as "unknown", not "off".
+    public var pushChannels: PushChannels?
+    public var devMailbox: Bool
+
+    public init(appName: String, googleSignIn: Bool, push: Bool, pushChannels: PushChannels? = nil, devMailbox: Bool) {
+        self.appName = appName
+        self.googleSignIn = googleSignIn
+        self.push = push
+        self.pushChannels = pushChannels
+        self.devMailbox = devMailbox
+    }
+
+    public var apnsConfigured: Bool? { pushChannels?.apns }
+}
+
+public struct VariablesResponse: Codable, Sendable {
+    public var variables: [WeatherVariable]
+}
+
+public struct PlacesSearchResponse: Codable, Sendable {
+    public var results: [PlaceSearchResult]
+}
+
+public struct RulesListResponse: Codable, Sendable {
+    public var rules: [Rule]
+}
+
+public struct RuleResponse: Codable, Sendable {
+    public var rule: Rule
+}
+
+public struct PushCounts: Codable, Hashable, Sendable {
+    public var attempted: Int
+    public var delivered: Int
+    public var failed: Int
+
+    public init(attempted: Int, delivered: Int, failed: Int) {
+        self.attempted = attempted
+        self.delivered = delivered
+        self.failed = failed
+    }
+}
+
+public struct RuleTestResponse: Codable, Sendable {
+    public var rule: Rule
+    public var evaluation: RuleEvaluation
+    /// The notification text that was (or would be) sent.
+    public var message: String
+    public var push: PushCounts
+}
+
+public struct PushSubscriptionInfo: Codable, Hashable, Identifiable, Sendable {
+    public var id: String
+    /// "webpush" | "apns" | "fcm" (absent on an older API = webpush).
+    public var channel: String?
+    public var endpoint: String
+    public var environment: String?
+    public var createdAt: String
+    public var userAgent: String?
+
+    public var resolvedChannel: String { channel ?? "webpush" }
+}
+
+public struct PushListResponse: Codable, Sendable {
+    public var subscriptions: [PushSubscriptionInfo]
+}
+
+public struct PushRegisterResponse: Codable, Sendable {
+    public var subscription: PushSubscriptionInfo
+    /// `false` = stored, but the server has no sender for this channel yet.
+    public var deliverable: Bool?
+}
+
+public struct DevOutboxMessage: Codable, Hashable, Sendable {
+    public var to: String
+    public var subject: String
+    public var text: String
+    public var sentAt: String
+
+    /// The first http(s) link in the text (the verification link).
+    public var firstLink: URL? {
+        guard let range = text.range(of: #"https?://[^\s]+"#, options: .regularExpression) else { return nil }
+        return URL(string: String(text[range]))
+    }
+}
+
+public struct DevOutboxResponse: Codable, Sendable {
+    public var messages: [DevOutboxMessage]
+}
+
+public struct HealthResponse: Codable, Sendable {
+    public var ok: Bool
+    public var version: String
+    public var time: String
+}
+
+// Better Auth responses the app reads.
+
+public struct SignInResponse: Codable, Sendable {
+    public var redirect: Bool?
+    public var token: String?
+    public var user: APIUser?
+}
+
+public struct SocialSignInResponse: Codable, Sendable {
+    public var url: String?
+    public var redirect: Bool?
+}
+
+public struct SessionResponse: Codable, Sendable {
+    public var user: APIUser?
+}
