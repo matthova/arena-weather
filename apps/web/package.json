@@ -1,0 +1,38 @@
+{
+  "name": "@arena-weather/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "scripts": {
+    "dev": "vite dev --port 3000",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "deploy": "wrangler deploy",
+    "cf-typegen": "wrangler types"
+  },
+  "dependencies": {
+    "@arena-weather/core": "workspace:*",
+    "@tanstack/react-query": "^5.108.2",
+    "@tanstack/react-router": "^1.170.46",
+    "@tanstack/react-start": "^1.169.7",
+    "better-auth": "^1.7.27",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.70.1",
+    "@cloudflare/workers-types": "^4.20251121.0",
+    "@testing-library/react": "^16.3.3",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^6.3.0",
+    "jsdom": "^31.0.1",
+    "typescript": "^5.9.0",
+    "vite": "^8.3.8",
+    "vitest": "^4.1.0",
+    "wrangler": "^4.166.0"
+  }
+}
