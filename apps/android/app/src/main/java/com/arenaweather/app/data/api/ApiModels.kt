@@ -25,6 +25,7 @@ data class ApiErrorDetail(val code: String = "unknown", val message: String = ""
 @Serializable
 data class ConfigResponse(
     val appName: String = "Weather alerts",
+    val appUrl: String? = null,
     val googleSignIn: Boolean = false,
     val push: Boolean = false,
     val pushChannels: PushChannels = PushChannels(),
