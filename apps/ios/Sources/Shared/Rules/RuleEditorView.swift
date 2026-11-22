@@ -204,7 +204,7 @@ struct ConditionEditorRow: View {
             }
             HStack {
                 Picker("Is", selection: $condition.comparator) {
-                    ForEach(Comparator.allCases, id: \.self) { Text("\($0.label) (\($0.rawValue))") }
+                    ForEach(WeatherAlertsKit.Comparator.allCases, id: \.self) { Text("\($0.label) (\($0.rawValue))") }
                 }
                 .labelsHidden()
                 TextField("Value", text: $condition.value)
