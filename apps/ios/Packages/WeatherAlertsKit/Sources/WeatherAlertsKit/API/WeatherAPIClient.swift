@@ -212,7 +212,6 @@ public final class WeatherAPIClient: @unchecked Sendable {
     public struct NativeRegistration: Encodable, Sendable {
         public var channel: String
         public var token: String
-        public var environment: String?
         public var userAgent: String?
     }
 
@@ -221,15 +220,22 @@ public final class WeatherAPIClient: @unchecked Sendable {
         return r.subscriptions
     }
 
-    /// Register this device's APNs token (idempotent: the server upserts by token).
-    public func registerAPNs(token: String, environment: String, deviceDescription: String? = nil) async throws -> PushRegisterResponse {
-        try await request(.POST, "/api/push/subscriptions", body: NativeRegistration(
-            channel: "apns", token: token, environment: environment, userAgent: deviceDescription ?? userAgent))
+    /// Register this device's APNs token (`POST /api/push/devices`; idempotent, the server upserts by token).
+    public func registerAPNs(token: String, deviceDescription: String? = nil) async throws -> PushDeviceResponse {
+        try await request(.POST, "/api/push/devices", body: NativeRegistration(
+            channel: "apns", token: token, userAgent: deviceDescription ?? userAgent))
     }
 
-    public func unregisterPush(token: String) async throws {
+    /// Forget a native device token (`DELETE /api/push/devices`).
+    public func unregisterDevice(token: String) async throws {
         struct Body: Encodable { let token: String }
-        _ = try await send(.DELETE, "/api/push/subscriptions", body: try encoder.encode(Body(token: token)))
+        _ = try await send(.DELETE, "/api/push/devices", body: try encoder.encode(Body(token: token)))
+    }
+
+    /// Forget a web push subscription by its endpoint (`DELETE /api/push/subscriptions`).
+    public func unregisterWebPush(endpoint: String) async throws {
+        struct Body: Encodable { let endpoint: String }
+        _ = try await send(.DELETE, "/api/push/subscriptions", body: try encoder.encode(Body(endpoint: endpoint)))
     }
 
     // MARK: Auth (Better Auth at /api/auth/*)

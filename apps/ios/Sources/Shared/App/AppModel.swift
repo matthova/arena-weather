@@ -135,7 +135,7 @@ public final class AppModel {
 
     public func signOut() async {
         if let token = settings.registeredPushToken {
-            try? await api.unregisterPush(token: token)
+            try? await api.unregisterDevice(token: token)
             settings.registeredPushToken = nil
         }
         await api.signOut()
@@ -168,7 +168,7 @@ public final class AppModel {
 
     public func disablePush() async throws {
         if let token = settings.registeredPushToken ?? currentToken {
-            try await api.unregisterPush(token: token)
+            try await api.unregisterDevice(token: token)
         }
         settings.registeredPushToken = nil
         pushState = .off
@@ -180,7 +180,7 @@ public final class AppModel {
     }
 
     private func register(token: String) async throws {
-        let response = try await api.registerAPNs(token: token, environment: push.environment, deviceDescription: push.deviceDescription)
+        let response = try await api.registerAPNs(token: token, deviceDescription: push.deviceDescription)
         settings.registeredPushToken = token
         pushState = .on(token: token, deliverable: response.deliverable ?? true)
     }

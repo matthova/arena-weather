@@ -185,20 +185,33 @@ final class WeatherAPIClientTests: XCTestCase {
 
     func testPushRegistration() async throws {
         tokens.save("t")
-        StubProtocol.enqueue(201, #"{"subscription":{"id":"s1","channel":"apns","endpoint":"abc","environment":"sandbox","createdAt":"c","userAgent":"x"},"deliverable":false}"#)
-        let r = try await client.registerAPNs(token: "abc", environment: "sandbox", deviceDescription: "iPhone")
-        XCTAssertEqual(r.subscription.channel, "apns")
+        StubProtocol.enqueue(201, #"{"device":{"id":"s1","channel":"apns","token":"abc","createdAt":"c","userAgent":"x"},"deliverable":false}"#)
+        let r = try await client.registerAPNs(token: "abc", deviceDescription: "iPhone")
+        XCTAssertEqual(r.device.channel, "apns")
+        XCTAssertEqual(r.device.token, "abc")
         XCTAssertEqual(r.deliverable, false)
+        XCTAssertEqual(lastRequest.url?.path, "/api/push/devices")
         let body = try JSONSerialization.jsonObject(with: lastRequest.httpBody ?? Data()) as? [String: Any]
         XCTAssertEqual(body?["channel"] as? String, "apns")
         XCTAssertEqual(body?["token"] as? String, "abc")
-        XCTAssertEqual(body?["environment"] as? String, "sandbox")
+        XCTAssertNil(body?["environment"], "the environment is the server's business")
         XCTAssertEqual(body?["userAgent"] as? String, "iPhone")
 
         StubProtocol.enqueue(204, "")
-        try await client.unregisterPush(token: "abc")
+        try await client.unregisterDevice(token: "abc")
         XCTAssertEqual(lastRequest.httpMethod, "DELETE")
-        XCTAssertEqual(lastRequest.url?.path, "/api/push/subscriptions")
+        XCTAssertEqual(lastRequest.url?.path, "/api/push/devices")
+        let del = try JSONSerialization.jsonObject(with: lastRequest.httpBody ?? Data()) as? [String: Any]
+        XCTAssertEqual(del?["token"] as? String, "abc")
+
+        StubProtocol.enqueue(200, #"{"subscriptions":[{"id":"w","channel":"webpush","endpoint":"https://push.example/x","createdAt":"c","userAgent":"Firefox"},{"id":"d","channel":"apns","endpoint":"abc","createdAt":"c","userAgent":null}]}"#)
+        let list = try await client.listPushSubscriptions()
+        XCTAssertEqual(list.map(\.resolvedChannel), ["webpush", "apns"])
+
+        StubProtocol.enqueue(200, #"{"appName":"Weather alerts","appUrl":"http://localhost:3000","googleSignIn":false,"push":true,"pushChannels":{"fcm":false,"apns":true},"devMailbox":true}"#)
+        let config = try await client.config()
+        XCTAssertEqual(config.apnsConfigured, true)
+        XCTAssertEqual(config.appUrl, "http://localhost:3000")
     }
 
     func testOneTimeTokenExchangeAndSignOut() async throws {

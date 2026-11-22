@@ -78,7 +78,7 @@ struct NotificationsSection: View {
         } header: {
             Text("Notifications")
         } footer: {
-            Text("Environment: \(model.push.environment). The 15-minute checker sends one push to every registered device when a rule becomes true; “Test this rule now” sends one immediately.")
+            Text("APNs \(model.push.environment) build. The 15-minute checker sends one push to every registered device when a rule becomes true; “Test this rule now” sends one immediately.")
         }
         .errorAlert($error)
     }
@@ -115,7 +115,7 @@ struct RegisteredDevicesSection: View {
                         Image(systemName: icon(device.resolvedChannel))
                         VStack(alignment: .leading, spacing: 2) {
                             Text(device.userAgent?.isEmpty == false ? device.userAgent! : device.resolvedChannel).lineLimit(1)
-                            Text("\(device.resolvedChannel)\(device.environment.map { " · \($0)" } ?? "") · \(WeatherFormat.isoDate(device.createdAt) ?? device.createdAt)")
+                            Text("\(device.resolvedChannel) · \(WeatherFormat.isoDate(device.createdAt) ?? device.createdAt)")
                                 .font(.caption).foregroundStyle(.secondary)
                         }
                     }
@@ -153,7 +153,11 @@ struct RegisteredDevicesSection: View {
 
     private func remove(_ device: PushSubscriptionInfo) async {
         do {
-            try await model.api.unregisterPush(token: device.endpoint)
+            if device.resolvedChannel == "webpush" {
+                try await model.api.unregisterWebPush(endpoint: device.endpoint)
+            } else {
+                try await model.api.unregisterDevice(token: device.endpoint)
+            }
             devices.removeAll { $0.id == device.id }
             if case .on(let token, _) = model.pushState, token == device.endpoint { try await model.disablePush() }
         } catch {
@@ -184,7 +188,7 @@ struct ServerSection: View {
                 LabeledContent("API", value: model.serverURL.absoluteString).lineLimit(1).truncationMode(.middle)
                 if let config = model.config {
                     LabeledContent("Google sign-in", value: config.googleSignIn ? "configured" : "not configured")
-                    LabeledContent("APNs", value: config.pushChannels.map { $0.apns ? "configured" : "not configured" } ?? "unknown (older API)")
+                    LabeledContent("APNs", value: config.apnsConfigured.map { $0 ? "configured" : "not configured" } ?? "unknown (older API)")
                 }
                 Button("Change server…") { text = model.serverURL.absoluteString; editing = true }
             }

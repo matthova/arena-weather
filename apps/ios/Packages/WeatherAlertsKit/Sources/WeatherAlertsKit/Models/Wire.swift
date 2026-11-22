@@ -27,13 +27,12 @@ public struct MeResponse: Codable, Sendable {
     public var user: APIUser?
 }
 
+/// `GET /api/config` → `pushChannels`: which native senders the deployment has secrets for.
 public struct PushChannels: Codable, Hashable, Sendable {
-    public var webpush: Bool
-    public var apns: Bool
-    public var fcm: Bool
+    public var apns: Bool?
+    public var fcm: Bool?
 
-    public init(webpush: Bool = false, apns: Bool = false, fcm: Bool = false) {
-        self.webpush = webpush
+    public init(apns: Bool? = nil, fcm: Bool? = nil) {
         self.apns = apns
         self.fcm = fcm
     }
@@ -42,6 +41,8 @@ public struct PushChannels: Codable, Hashable, Sendable {
 /// `GET /api/config`: what this deployment offers.
 public struct ServerConfig: Codable, Hashable, Sendable {
     public var appName: String
+    /// Public origin of the web app (e-mail links land there).
+    public var appUrl: String?
     public var googleSignIn: Bool
     /// Web push (VAPID) configured.
     public var push: Bool
@@ -49,14 +50,16 @@ public struct ServerConfig: Codable, Hashable, Sendable {
     public var pushChannels: PushChannels?
     public var devMailbox: Bool
 
-    public init(appName: String, googleSignIn: Bool, push: Bool, pushChannels: PushChannels? = nil, devMailbox: Bool) {
+    public init(appName: String, appUrl: String? = nil, googleSignIn: Bool, push: Bool, pushChannels: PushChannels? = nil, devMailbox: Bool) {
         self.appName = appName
+        self.appUrl = appUrl
         self.googleSignIn = googleSignIn
         self.push = push
         self.pushChannels = pushChannels
         self.devMailbox = devMailbox
     }
 
+    /// nil = the API predates native push and cannot say.
     public var apnsConfigured: Bool? { pushChannels?.apns }
 }
 
@@ -96,25 +99,35 @@ public struct RuleTestResponse: Codable, Sendable {
     public var push: PushCounts
 }
 
+/// One row of `GET /api/push/subscriptions`: a browser (webpush) or a device token (apns / fcm).
 public struct PushSubscriptionInfo: Codable, Hashable, Identifiable, Sendable {
     public var id: String
     /// "webpush" | "apns" | "fcm" (absent on an older API = webpush).
     public var channel: String?
+    /// Web push: the push-service URL. Native: the device token.
     public var endpoint: String
-    public var environment: String?
     public var createdAt: String
     public var userAgent: String?
 
     public var resolvedChannel: String { channel ?? "webpush" }
 }
 
+/// `POST /api/push/devices` → `device`.
+public struct PushDeviceInfo: Codable, Hashable, Identifiable, Sendable {
+    public var id: String
+    public var channel: String
+    public var token: String
+    public var createdAt: String
+    public var userAgent: String?
+}
+
 public struct PushListResponse: Codable, Sendable {
     public var subscriptions: [PushSubscriptionInfo]
 }
 
-public struct PushRegisterResponse: Codable, Sendable {
-    public var subscription: PushSubscriptionInfo
-    /// `false` = stored, but the server has no sender for this channel yet.
+public struct PushDeviceResponse: Codable, Sendable {
+    public var device: PushDeviceInfo
+    /// `false` = stored, but the server has no APNs key yet.
     public var deliverable: Bool?
 }
 

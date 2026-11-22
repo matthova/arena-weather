@@ -25,7 +25,8 @@ public enum PushError: LocalizedError, Equatable {
 
 @MainActor
 public protocol PushRegistrar: AnyObject {
-    /// "sandbox" for Xcode/debug builds, "production" for TestFlight/App Store (what the API tells APNs).
+    /// "sandbox" for Xcode/debug builds, "production" for TestFlight/App Store (shown to the user; the
+    /// API tries its configured APNs host first and the other one on BadDeviceToken).
     var environment: String { get }
     /// Shown in the devices list, e.g. "iPhone15,3 · iOS 17.5".
     var deviceDescription: String { get }
