@@ -44,3 +44,22 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       # google-services.json is not committed: the build applies the Firebase plugin only when it exists.
       - run: ./gradlew assembleDebug testDebugUnitTest lintDebug --no-daemon
+
+  ios:
+    name: iOS app (Swift package tests + xcodebuild)
+    runs-on: macos-15
+    defaults:
+      run:
+        working-directory: apps/ios
+    steps:
+      - uses: actions/checkout@v4
+      - run: brew install xcodegen
+      - run: swift test
+        working-directory: apps/ios/Packages/WeatherAlertsKit
+      - run: xcodegen generate
+      # No signing on CI: the entitlements/team are per developer (Config/Local.xcconfig).
+      - run: >
+          xcodebuild build -project WeatherAlerts.xcodeproj -scheme WeatherAlerts -configuration Debug
+          -destination 'generic/platform=iOS Simulator' -skipPackagePluginValidation
+          CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" DEVELOPMENT_TEAM=""
+          | tail -n 60; exit ${PIPESTATUS[0]}

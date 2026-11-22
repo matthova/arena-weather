@@ -64,7 +64,12 @@ accepts `headers: { authorization: ... }` for this. Store the token in the Keych
 
 **Google on native.** `sign-in/social` is a browser redirect flow. Use `ASWebAuthenticationSession`
 (iOS/macOS) or Custom Tabs (Android) with a `callbackURL` that is a universal/app link back into the
-app, then read the session. The redirect URI registered at Google stays the API's
+app, then read the session. The browser's cookie session is not the app's, so the API offers a
+hand-off: make the `callbackURL` `<API_URL>/api/native/handoff?redirect=<yourscheme>://auth/callback`;
+once the browser is signed in that route mints a 3-minute one-time token (Better Auth `oneTimeToken`
+plugin) and redirects to your scheme with `?ott=…`; the app posts it to
+`/api/auth/one-time-token/verify` and reads the bearer session from `set-auth-token`. Add your scheme
+to the API var `NATIVE_REDIRECT_SCHEMES` (comma-separated; it is the allow-list against open redirects). The redirect URI registered at Google stays the API's
 `<API_URL>/api/auth/callback/google`. A native Google Sign-In SDK can also hand its ID token to
 `POST /api/auth/sign-in/social` `{ provider: "google", idToken: { token } }`.
 
@@ -108,8 +113,12 @@ Windows (WNS) later. The shape is the same, only the transport differs:
 
 FCM is implemented (`apps/api/src/push/fcm.ts`, HTTP v1: service-account RS256 JWT signed with
 WebCrypto → OAuth 2.0 access token, cached until shortly before expiry → `projects/<id>/messages:send`;
-secret `FCM_SERVICE_ACCOUNT`); see §5 below for the Android client. APNs would be the same file
-shape with an ES256 provider-token JWT and `api.push.apple.com/3/device/<token>`.
+secret `FCM_SERVICE_ACCOUNT`); see §5 below for the Android client. APNs is implemented too
+(`apps/api/src/push/apns.ts`, token-based auth: the `.p8` key → ES256 provider JWT with `kid`/`iss`,
+cached 50 minutes → `POST https://api.push.apple.com/3/device/<token>` with `apns-topic` = bundle id,
+`apns-collapse-id` = tag; secrets `APNS_TEAM_ID`, `APNS_KEY_ID`, `APNS_PRIVATE_KEY`, var
+`APNS_BUNDLE_ID`); because the row stores no environment, a `BadDeviceToken` on the configured host is
+retried once on the other (sandbox ↔ production) before the token is dropped. See §6 for the iOS client.
 
 PWA note: on iOS, web push only works for an installed PWA (iOS 16.4+); the web app ships a manifest
 and service worker so it can be added to the Home Screen.
@@ -193,3 +202,20 @@ document; `apps/android/README.md` is its guide. The pieces that map onto the se
 Secrets and files that stay out of git: `app/google-services.json` (Firebase project; `.example`
 committed), `local.properties` (`arena.apiBaseUrl`, `arena.googleWebClientId`), and on the API
 `FCM_SERVICE_ACCOUNT`.
+
+## 6. Reference: the iOS app
+
+`apps/ios` (Swift, SwiftUI, iOS 17+) is the second native client; `apps/ios/README.md` is its guide.
+Its layout is meant to be shared with macOS (slice 3): the UI-free Swift package
+`Packages/WeatherAlertsKit` plus platform-neutral SwiftUI in `Sources/Shared`, with the platform
+entry point in `Sources/iOS`. The pieces that map onto the sections above:
+
+| § | iOS | Where |
+| --- | --- | --- |
+| 1 | `WeatherAPIClient` (URLSession, async/await), one method per endpoint, `{ error }` and Better Auth error bodies → `APIError` (`isUnauthorized`, `isEmailNotVerified`) | `Packages/WeatherAlertsKit/Sources/WeatherAlertsKit/API/` |
+| 2 | E-mail + password; the **bearer token** from `set-auth-token` in the Keychain (`KeychainTokenStore`) sent as `Authorization: Bearer`; the dev-outbox confirmation opens the verification link in-app; Google through `ASWebAuthenticationSession` → `GET /api/native/handoff` → `weatheralerts://auth/callback?ott=` → `/api/auth/one-time-token/verify` | `AppModel.swift`, `Auth/` |
+| 3 | `UNUserNotificationCenter.requestAuthorization` + `registerForRemoteNotifications` → hex token → `POST /api/push/devices { channel: "apns", token, userAgent }` on enable and silently on later launches; `DELETE` on sign-out; a tap reads `data.ruleId` from the payload and opens the rule | `Sources/iOS/APNsRegistrar.swift`, `AppDelegate.swift`, `Shared/App/PushRegistrar.swift` |
+| 4 | Rule JSON as `Codable` structs with a `type`-discriminated `RuleNode` enum (`operator` is spelled `op` in Swift, same key on the wire); `RuleDraft` (observable builder state) → `definition()` with the schema's checks, per-node errors; `Describe` for the server's wording | `Models/Rule.swift`, `RuleDraft.swift`, `Describe.swift`, `Models/Variables.swift` |
+
+Secrets and files that stay out of git: `Config/Local.xcconfig` (team id, bundle id, API URL for a
+device), and on the API `APNS_TEAM_ID`, `APNS_KEY_ID`, `APNS_PRIVATE_KEY`.

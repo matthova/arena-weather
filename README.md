@@ -103,6 +103,8 @@ GitHub Actions does the same on every push to `main` (`.github/workflows/deploy.
 | `RESEND_API_KEY` | secret | Verification / reset e-mails via [Resend](https://resend.com) |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` | secret | Web push signing (`pnpm --filter @arena-weather/api vapid:generate`) |
 | `CHECKER_TOKEN` | secret | Bearer token for `POST /api/internal/run-checker` |
+| `APNS_TEAM_ID`, `APNS_KEY_ID`, `APNS_PRIVATE_KEY` | secret | APNs token-based auth for iOS push (`wrangler secret put APNS_PRIVATE_KEY < AuthKey.p8`); unset = iOS devices register but nothing is sent |
+| `APNS_BUNDLE_ID`, `APNS_ENVIRONMENT`, `NATIVE_REDIRECT_SCHEMES` | `wrangler.jsonc` vars | APNs topic (the iOS bundle id), APNs host tried first (`production`/`sandbox`), URL schemes allowed on `GET /api/native/handoff` |
 | `FCM_SERVICE_ACCOUNT` | secret | Firebase service-account key JSON (one line) for Android push over FCM HTTP v1; unset = Android devices register but nothing is sent |
 | `APP_URL`, `API_URL`, `TRUSTED_ORIGINS` | `wrangler.jsonc` vars | Public origins (CORS, cookies, e-mail links) |
 | `EMAIL_FROM`, `VAPID_SUBJECT`, `OPEN_METEO_*_URL` | `wrangler.jsonc` vars | Sender identity, upstream URLs |
@@ -157,6 +159,33 @@ Push is Firebase Cloud Messaging. Two files/secrets are needed and **neither is 
 shows the shape, and the build works without it, push then disabled at runtime) and the API secret
 `FCM_SERVICE_ACCOUNT` (the service-account key JSON). The server address can be changed in the app
 (sign-in screen) or with `arena.apiBaseUrl` in `apps/android/local.properties`.
+
+## iOS app
+
+`apps/ios` is a native Swift / SwiftUI app (iOS 17+) against the same API and accounts. It is not part
+of the pnpm workspace: the Xcode project is generated from the checked-in `apps/ios/project.yml` with
+[XcodeGen](https://github.com/yonaskolb/XcodeGen), and the UI-free half (rule JSON models, builder
+validation, API client) is the Swift package `apps/ios/Packages/WeatherAlertsKit`, laid out so the
+macOS app of slice 3 compiles the same SwiftUI screens. `apps/ios/README.md` has the full guide,
+the APNs setup and the verification checklist.
+
+```sh
+pnpm dev                                   # the API on :8787 (the simulator reaches localhost directly)
+cd apps/ios
+xcodegen generate && open WeatherAlerts.xcodeproj   # needs Xcode 15.3+; pick a simulator, ⌘R
+(cd Packages/WeatherAlertsKit && swift test)        # 28 tests; also run on Linux
+```
+
+Screens: forecast (place search, device location, current + 24 h + 7 days), sign in / sign up /
+confirm e-mail (Better Auth bearer sessions in the Keychain; Google through `ASWebAuthenticationSession`
+and `GET /api/native/handoff` when configured), rules list with pause / resume / delete and **Test
+this rule now** (evaluation tree + push counts), the same rule builder as the web saved as the shared
+rule JSON, and an Account tab for push setup, the account's devices and the server address.
+
+Push is APNs with token-based auth: the API secrets `APNS_TEAM_ID`, `APNS_KEY_ID`, `APNS_PRIVATE_KEY`
+(the `.p8` file) and the var `APNS_BUNDLE_ID`; nothing is committed. Devices register with
+`POST /api/push/devices { channel: "apns", token }`; delivery needs a real device (the simulator gets
+no token) and a bundle id / team of your own (`apps/ios/Config/Local.xcconfig`, git-ignored).
 
 ## API
 
