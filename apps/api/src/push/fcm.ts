@@ -191,10 +191,10 @@ export function buildFcmMessage(deviceToken: string, message: PushMessage) {
         priority: "HIGH" as const,
         ttl: "14400s",
         ...(collapseKey ? { collapse_key: collapseKey } : {}),
+        // no click_action: the launcher activity opens with the data fields as intent extras
         notification: {
           channel_id: "weather_alerts",
           ...(collapseKey ? { tag: collapseKey } : {}),
-          click_action: "OPEN_RULE",
         },
       },
     },
