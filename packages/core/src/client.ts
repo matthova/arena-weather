@@ -66,6 +66,35 @@ export interface HealthResponse {
   time: string;
 }
 
+/** What a deployment offers; clients hide what is not configured. */
+export interface ConfigResponse {
+  appName: string;
+  /** Google OAuth is configured (offer "Continue with Google"). */
+  googleSignIn: boolean;
+  /** VAPID keys are configured (web push can be registered). */
+  push: boolean;
+  /** Local development: e-mails are collected at GET /api/dev/outbox instead of being sent. */
+  devMailbox: boolean;
+}
+
+export interface ApiUser {
+  id: string;
+  email: string;
+  name: string;
+  image?: string | null;
+  emailVerified: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MeResponse {
+  user: ApiUser | null;
+}
+
+export interface DevOutboxResponse {
+  messages: { to: string; subject: string; text: string; html?: string; sentAt: string }[];
+}
+
 // --- Client --------------------------------------------------------------------
 
 export class WeatherApiError extends Error {
@@ -123,7 +152,11 @@ export function createWeatherClient(options: WeatherClientOptions) {
 
   return {
     health: () => request<HealthResponse>("GET", "/api/health"),
+    config: () => request<ConfigResponse>("GET", "/api/config"),
     variables: () => request<VariablesResponse>("GET", "/api/variables"),
+    me: () => request<MeResponse>("GET", "/api/me"),
+    /** Local development only (404 elsewhere): e-mails the API would have sent. */
+    devOutbox: (to?: string) => request<DevOutboxResponse>("GET", `/api/dev/outbox${qs({ to })}`),
 
     searchPlaces: (query: string, opts?: { count?: number; language?: string }) =>
       request<PlacesSearchResponse>(
