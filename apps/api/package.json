@@ -1,0 +1,33 @@
+{
+  "name": "@arena-weather/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "build": "wrangler deploy --dry-run --outdir dist",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "deploy": "wrangler d1 migrations apply weather-alerts --remote && wrangler deploy",
+    "db:migrate": "wrangler d1 migrations apply weather-alerts --local",
+    "db:migrate:remote": "wrangler d1 migrations apply weather-alerts --remote",
+    "cf-typegen": "wrangler types",
+    "vapid:generate": "node scripts/generate-vapid.mjs"
+  },
+  "dependencies": {
+    "@arena-weather/core": "workspace:*",
+    "@hono/zod-validator": "^0.9.1",
+    "better-auth": "^1.7.27",
+    "hono": "^4.13.0",
+    "kysely": "^0.28.0",
+    "kysely-d1": "^0.4.0",
+    "zod": "^4.1.0"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-plugin": "^1.9.0",
+    "@cloudflare/workers-types": "^4.20251121.0",
+    "typescript": "^5.9.0",
+    "vitest": "^4.1.0",
+    "wrangler": "^4.166.0"
+  }
+}

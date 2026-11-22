@@ -1,0 +1,32 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "arena-weather-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-11-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+  "triggers": {
+    // Evaluate every active rule against fresh forecasts every 15 minutes.
+    "crons": ["*/15 * * * *"]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "weather-alerts",
+      // Replace with the id printed by `wrangler d1 create weather-alerts` before the first deploy.
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations"
+    }
+  ],
+  // Non-secret configuration. Secrets (see README) are set with `wrangler secret put` / .dev.vars.
+  "vars": {
+    "APP_NAME": "Weather alerts",
+    "APP_URL": "http://localhost:3000",
+    "API_URL": "http://localhost:8787",
+    "TRUSTED_ORIGINS": "http://localhost:3000,http://localhost:8787",
+    "EMAIL_FROM": "Weather alerts <alerts@example.com>",
+    "VAPID_SUBJECT": "mailto:alerts@example.com",
+    "OPEN_METEO_FORECAST_URL": "https://api.open-meteo.com/v1/forecast",
+    "OPEN_METEO_GEOCODING_URL": "https://geocoding-api.open-meteo.com/v1/search"
+  }
+}

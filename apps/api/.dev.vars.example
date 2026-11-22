@@ -1,0 +1,20 @@
+# Copy to apps/api/.dev.vars for local development (that file is git-ignored).
+# In production set each with: pnpm --filter @arena-weather/api exec wrangler secret put <NAME>
+
+# Better Auth: random string of 32+ chars (openssl rand -base64 32)
+BETTER_AUTH_SECRET=change-me-to-a-long-random-string
+
+# Google OAuth (https://console.cloud.google.com/apis/credentials).
+# Redirect URI: <API_URL>/api/auth/callback/google
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+
+# Resend (https://resend.com) for verification e-mails. Leave empty locally: e-mails are logged instead.
+RESEND_API_KEY=
+
+# Web push VAPID keys: pnpm --filter @arena-weather/api vapid:generate
+VAPID_PUBLIC_KEY=
+VAPID_PRIVATE_KEY=
+
+# Optional: protects POST /api/internal/run-checker (manual trigger of the cron job).
+CHECKER_TOKEN=
