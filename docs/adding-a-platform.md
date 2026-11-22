@@ -55,11 +55,12 @@ plain HTTP, so any platform can call them:
 - the web app (first-party cookie through the `/api` proxy);
 - iOS `URLSession` and Android OkHttp with a cookie jar: they store and resend it automatically.
 
-For a cleaner native story, enable Better Auth's
-[`bearer` plugin](https://better-auth.com/docs/plugins/bearer) in `apps/api/src/auth.ts`
-(`plugins: [bearer()]`). The sign-in response then carries the token in the `set-auth-token` header,
-and clients send `Authorization: Bearer <token>` instead of the cookie. `createWeatherClient` already
-accepts `headers: { authorization: ... }` for this. Store the token in the Keychain / EncryptedSharedPreferences.
+For native clients Better Auth's [`bearer` plugin](https://better-auth.com/docs/plugins/bearer) is
+enabled in `apps/api/src/auth.ts` (`plugins: [bearer()]`): the sign-in response carries the session
+token in the `set-auth-token` header, and clients send `Authorization: Bearer <token>` instead of the
+cookie on every request (including `/api/auth/get-session` and `/api/auth/sign-out`). `createWeatherClient`
+accepts `headers: { authorization: ... }` for this. Store the token in the Keychain / EncryptedSharedPreferences
+/ DataStore. Requests without an `Origin` header are accepted (no browser, no CSRF surface).
 
 **Google on native.** `sign-in/social` is a browser redirect flow. Use `ASWebAuthenticationSession`
 (iOS/macOS) or Custom Tabs (Android) with a `callbackURL` that is a universal/app link back into the
@@ -90,18 +91,25 @@ The service worker (`apps/web/public/sw.js`) receives the payload, which is the 
 { "title": "Wet and windy evening", "body": "Precipitation chance >= 60 % … in Berlin", "url": "https://app/rules/<id>", "tag": "rule-<id>", "data": { "ruleId": "…", "matched": true } }
 ```
 
-**Native platforms** need a second delivery channel: APNs (iOS/macOS) and FCM (Android), and
-Windows (WNS) later. The shape is the same, only the transport differs. The intended extension is:
+**Native platforms** need a second delivery channel: APNs (iOS/macOS), FCM (Android), and
+Windows (WNS) later. The shape is the same, only the transport differs:
 
-- a `channel` column on `push_subscription` (`webpush` | `apns` | `fcm`), with the device token in
-  `endpoint` and no `p256dh`/`auth` for native channels;
-- `POST /api/push/subscriptions` accepting `{ channel: "apns", token, userAgent }`;
-- a sender per channel next to `webpush.ts`, chosen in `apps/api/src/notify.ts` (`notifyUser`),
-  which already loops over all of a user's subscriptions and prunes dead ones (404/410);
-- the notification payload keeps `title`, `body`, `url`/`ruleId`, `tag` (collapse id).
+- `push_subscription.channel` (`webpush` | `fcm` | `apns`, migration `0003_push_channel.sql`): native
+  rows keep the device token in `endpoint` and empty `p256dh`/`auth`;
+- `POST /api/push/devices` `{ channel: "fcm" | "apns", token, userAgent? }` registers a device
+  (idempotent by token; answers `{ device, deliverable }`, `deliverable` = the server has that
+  channel's secret), `DELETE /api/push/devices` `{ token }` forgets it (`apps/api/src/routes/push-devices.ts`,
+  `apps/api/src/db/push-devices.ts`); `GET /api/push/subscriptions` lists every channel;
+- one sender per channel next to `webpush.ts`, chosen in `apps/api/src/notify.ts` (`notifyUser`) by
+  `channel`; it already loops over all of a user's devices and prunes the ones the service reports gone
+  (404/410 for web push, `UNREGISTERED` for FCM);
+- the payload keeps `title`, `body`, `url`, `tag` (collapse id), `data.ruleId`, `data.matched`;
+- `GET /api/config` → `pushChannels: { fcm: boolean, … }` says which native channels can deliver.
 
-Until that lands, a native app can still exercise everything except delivery: rules, forecasts,
-"Test this rule now" (its JSON response includes the evaluation and the message text).
+FCM is implemented (`apps/api/src/push/fcm.ts`, HTTP v1: service-account RS256 JWT signed with
+WebCrypto → OAuth 2.0 access token, cached until shortly before expiry → `projects/<id>/messages:send`;
+secret `FCM_SERVICE_ACCOUNT`); see §5 below for the Android client. APNs would be the same file
+shape with an ES256 provider-token JWT and `api.push.apple.com/3/device/<token>`.
 
 PWA note: on iOS, web push only works for an installed PWA (iOS 16.4+); the web app ships a manifest
 and service worker so it can be added to the Home Screen.
@@ -166,6 +174,22 @@ editing. Its tests (`rule-draft.test.ts`) double as examples of valid and invali
 - [ ] Sign up / sign in / sign out via `/api/auth/*`; surface "e-mail not verified" with a resend button.
 - [ ] Place search + forecast screen (current, 24 h, 7 days) from `/api/places/search` and `/api/forecast`.
 - [ ] Rule list with pause/resume/delete, and a builder that emits the rule JSON (validate with the same rules).
-- [ ] Register a push channel for the device; show registered devices; unregister on sign-out.
+- [ ] Register a push channel for the device (`POST /api/push/devices` for native); show registered devices; unregister on sign-out.
 - [ ] "Test this rule now" button showing the evaluation tree.
 - [ ] Read `GET /api/config` and hide Google / push when they are not configured.
+
+## 5. Reference: the Android app
+
+`apps/android` (Kotlin, Jetpack Compose) is the first native client and a worked example of this
+document; `apps/android/README.md` is its guide. The pieces that map onto the sections above:
+
+| § | Android | Where |
+| --- | --- | --- |
+| 1 | Ktor client, one method per endpoint, `{ error }` and Better Auth error bodies → `ApiException` | `data/api/WeatherApi.kt`, `ApiModels.kt` |
+| 2 | E-mail + password through `/api/auth/*`; the session is the **bearer token** from `set-auth-token` (Better Auth `bearer` plugin is enabled on the API), kept in DataStore and sent as `Authorization: Bearer`; Google via Credential Manager → `sign-in/social { provider: "google", idToken }`; verification link's `callbackURL` = `appUrl` from `GET /api/config` | `data/Session.kt`, `data/Settings.kt`, `ui/auth/` |
+| 3 | `FirebaseMessaging.getToken()` → `POST /api/push/devices { channel: "fcm", token, userAgent }` after sign-in and on `onNewToken`; `DELETE` on sign-out; notification channel id `weather_alerts` matches `android.notification.channel_id` in the FCM message | `data/push/PushRegistrar.kt`, `AlertsMessagingService.kt` |
+| 4 | Rule JSON as `@Serializable` classes with a `type`-discriminated sealed `RuleNode`; the builder's draft → definition port of `rule-draft.ts` with the schema's checks; `describeCondition` wording | `data/rules/RuleModel.kt`, `RuleDraft.kt`, `Variables.kt` |
+
+Secrets and files that stay out of git: `app/google-services.json` (Firebase project; `.example`
+committed), `local.properties` (`arena.apiBaseUrl`, `arena.googleWebClientId`), and on the API
+`FCM_SERVICE_ACCOUNT`.

@@ -8,6 +8,7 @@ Weather alerts: pick a place, describe the weather you care about as a rule ("ra
 apps/
   api/        Hono API on Cloudflare Workers + D1: auth, rules, forecasts, push, 15-minute checker
   web/        TanStack Start (React) on Cloudflare Workers: installable PWA, forecast, rule builder, web push
+  android/    Native Android app (Kotlin, Jetpack Compose, Material 3): same account, rules, forecast, FCM push
 packages/
   core/       Shared TypeScript: rule schema (zod), pure evaluator, variable catalogue, typed API client
 docs/
@@ -58,7 +59,7 @@ One-time setup (needs `wrangler login` or `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_A
 ```sh
 cd apps/api
 pnpm exec wrangler d1 create weather-alerts        # paste the printed database_id into wrangler.jsonc
-for s in BETTER_AUTH_SECRET GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET RESEND_API_KEY VAPID_PUBLIC_KEY VAPID_PRIVATE_KEY CHECKER_TOKEN; do
+for s in BETTER_AUTH_SECRET GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET RESEND_API_KEY VAPID_PUBLIC_KEY VAPID_PRIVATE_KEY CHECKER_TOKEN FCM_SERVICE_ACCOUNT; do
   pnpm exec wrangler secret put $s
 done
 ```
@@ -91,7 +92,7 @@ pnpm run deploy        # core build → API: D1 migrations + wrangler deploy →
 (`pnpm run deploy`, not `pnpm deploy`: the latter is pnpm's own built-in command. The web deploy
 runs after the API deploy because its service binding needs the API Worker to exist.)
 
-GitHub Actions does the same on every push to `main` (`.github/workflows/deploy.yml`) using the repository secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`; `ci.yml` lints, builds, typechecks and tests pull requests (all three packages).
+GitHub Actions does the same on every push to `main` (`.github/workflows/deploy.yml`) using the repository secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`; `ci.yml` lints, builds, typechecks and tests pull requests (all three packages), and builds and unit-tests the Android app in a second job.
 
 ### Secrets and configuration
 
@@ -102,6 +103,7 @@ GitHub Actions does the same on every push to `main` (`.github/workflows/deploy.
 | `RESEND_API_KEY` | secret | Verification / reset e-mails via [Resend](https://resend.com) |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` | secret | Web push signing (`pnpm --filter @arena-weather/api vapid:generate`) |
 | `CHECKER_TOKEN` | secret | Bearer token for `POST /api/internal/run-checker` |
+| `FCM_SERVICE_ACCOUNT` | secret | Firebase service-account key JSON (one line) for Android push over FCM HTTP v1; unset = Android devices register but nothing is sent |
 | `APP_URL`, `API_URL`, `TRUSTED_ORIGINS` | `wrangler.jsonc` vars | Public origins (CORS, cookies, e-mail links) |
 | `EMAIL_FROM`, `VAPID_SUBJECT`, `OPEN_METEO_*_URL` | `wrangler.jsonc` vars | Sender identity, upstream URLs |
 | `API_ORIGIN` | `apps/web/wrangler.jsonc` var | Where the web dev server forwards `/api` (default `http://localhost:8787`); production uses the `API` service binding instead |
@@ -129,6 +131,33 @@ the browser's "Install" / "Add to Home Screen" action. On iOS web push only work
 Styling is plain CSS (`src/styles/app.css`, light/dark via `prefers-color-scheme`); data fetching is
 TanStack Query over the typed client from `packages/core`.
 
+## Android app
+
+`apps/android` is a native Kotlin / Jetpack Compose (Material 3) app against the same API and
+accounts, `minSdk 26`. It is not part of the pnpm workspace; it builds with Gradle
+(`apps/android/README.md` has the full guide, the screen list and the verification checklist).
+
+```sh
+pnpm dev                                   # the API on :8787 (the emulator reaches it as 10.0.2.2:8787)
+cd apps/android
+./gradlew assembleDebug                    # needs JDK 17 + Android SDK 35 (ANDROID_HOME or local.properties sdk.dir)
+./gradlew testDebugUnitTest                # JVM tests: rule JSON <-> Kotlin model, builder validation, API client
+./gradlew installDebug                     # onto an emulator or a phone
+```
+
+Screens: forecast (place search, device location, current + 24 h + 7 days), sign in / sign up /
+confirm e-mail (Better Auth; Google via Credential Manager when configured), rules list with
+pause / resume / delete and **Test this rule now** (evaluation tree + push counts), the same rule
+builder as the web (nested all/any groups, any hourly or daily variable, comparator, value, any/every
+sample, place, optional window) saved as the shared rule JSON, and an Alerts tab for push setup and
+the account's devices.
+
+Push is Firebase Cloud Messaging. Two files/secrets are needed and **neither is committed**:
+`apps/android/app/google-services.json` (from the Firebase console; `google-services.json.example`
+shows the shape, and the build works without it, push then disabled at runtime) and the API secret
+`FCM_SERVICE_ACCOUNT` (the service-account key JSON). The server address can be changed in the app
+(sign-in screen) or with `arena.apiBaseUrl` in `apps/android/local.properties`.
+
 ## API
 
 All JSON, under `/api`. Session cookie auth (Better Auth); `packages/core` exports a typed client (`createWeatherClient`) for all of it.
@@ -143,7 +172,8 @@ All JSON, under `/api`. Session cookie auth (Better Auth); `packages/core` expor
 | `POST /rules/:id/pause`, `POST /rules/:id/resume` | ✓ | Pause/resume (resume re-arms) |
 | `POST /rules/:id/test` | ✓ | Evaluate against the live forecast now and push the result to the caller's devices |
 | `GET /push/public-key` | – | VAPID public key for `pushManager.subscribe` |
-| `GET/POST/DELETE /push/subscriptions` | ✓ | Register (upsert by endpoint) / list / unregister push subscriptions |
+| `GET/POST/DELETE /push/subscriptions` | ✓ | Register (upsert by endpoint) / list / unregister push subscriptions (each row has a `channel`: `webpush`, `fcm`, `apns`) |
+| `POST/DELETE /push/devices` | ✓ | Native device tokens: `{ channel: "fcm", token, userAgent? }` (upsert by token) / `{ token }` |
 | `POST /internal/run-checker` | token | Run the cron job on demand |
 
 ### Rules
@@ -168,13 +198,13 @@ All JSON, under `/api`. Session cookie auth (Better Auth); `packages/core` expor
 
 A condition holds when **any** forecast sample in the window satisfies it (`"quantifier": "all"` requires every sample). The checker runs every 15 minutes: a rule **fires once** when its evaluation turns true and **re-arms** when it turns false again; paused rules are skipped. Trigger state (`armed`, `lastEvaluatedAt`, `lastFiredAt`) is stored per rule in D1.
 
-Web push is implemented on WebCrypto only (`apps/api/src/push/webpush.ts`: VAPID ES256 JWT + RFC 8291 `aes128gcm`), verified in the Workers runtime against the RFC test vector; no Node-only dependency.
+Web push is implemented on WebCrypto only (`apps/api/src/push/webpush.ts`: VAPID ES256 JWT + RFC 8291 `aes128gcm`), verified in the Workers runtime against the RFC test vector; no Node-only dependency. Android push is FCM HTTP v1 on the same footing (`apps/api/src/push/fcm.ts`: service-account RS256 JWT → OAuth access token, cached; `notifyUser` picks the sender by the subscription's `channel`). Native clients authenticate with a bearer token (Better Auth `bearer` plugin: sign-in answers with `set-auth-token`).
 
 ## Known gaps / next
 
 - Replace the placeholder `database_id` in `apps/api/wrangler.jsonc` after `wrangler d1 create`, and set the production origins (see Deploy) before the first deploy; neither has been run against a real Cloudflare account yet (the sandbox has no credentials), only `wrangler deploy --dry-run`.
 - Google sign-in and Resend are wired but untested end to end for the same reason.
-- Native push channels (APNs/FCM) are not implemented; see `docs/adding-a-platform.md` for the intended shape.
+- FCM (Android) is implemented but, like Google sign-in and Resend, untested against a real Firebase project from this sandbox; APNs (iOS) follows the same `channel` shape (`docs/adding-a-platform.md`).
 - Password reset has an API (`/api/auth/forget-password`, `/api/auth/reset-password`) but no screen yet.
 - Notification history is stored (`notification` table) but has no endpoint yet.
 - Open-Meteo is free for non-commercial use; rate limits are generous but the checker fetches one forecast per distinct place per run (cached 10 minutes).
