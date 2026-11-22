@@ -17,7 +17,7 @@
     "db:migrate:remote": "pnpm --filter @arena-weather/api db:migrate:remote"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.3.0",
+    "@biomejs/biome": "^2.6.8",
     "turbo": "^2.5.0",
     "typescript": "^5.9.0"
   }

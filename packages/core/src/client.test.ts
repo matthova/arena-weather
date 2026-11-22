@@ -38,12 +38,13 @@ describe("createWeatherClient", () => {
       place: { label: "B", latitude: 1, longitude: 2 },
       root: { type: "group", operator: "all", children: [] },
     });
-    const init = calls[0]?.init;
+    const init = calls[0]?.init ?? {};
+    const headers = (init.headers ?? {}) as Record<string, string>;
     expect(calls[0]?.url).toBe("/api/rules");
-    expect(init?.method).toBe("POST");
-    expect((init?.headers as Record<string, string>)["content-type"]).toBe("application/json");
-    expect((init?.headers as Record<string, string>).authorization).toBe("Bearer t");
-    expect(JSON.parse(init?.body as string).name).toBe("x");
+    expect(init.method).toBe("POST");
+    expect(headers["content-type"]).toBe("application/json");
+    expect(headers.authorization).toBe("Bearer t");
+    expect(JSON.parse(init.body as string).name).toBe("x");
   });
 
   it("throws WeatherApiError with the server's code on failure, and handles 204", async () => {
