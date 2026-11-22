@@ -324,6 +324,7 @@ describe("/api/push/devices (native device tokens)", () => {
     expect(r.data.deliverable).toBe(false);
     const config = await api("GET", "/api/config");
     expect(config.data.pushChannels).toEqual({ fcm: false });
+    expect(config.data.appUrl).toBe("http://localhost:3000");
   });
 
   it("a user's rules notify FCM devices and web push alike; dead tokens are pruned", async () => {

@@ -13,6 +13,8 @@ export const metaRoutes = new Hono<AppEnv>()
     const env = c.env;
     return c.json({
       appName: env.APP_NAME,
+      /** Public origin of the web app: native clients use it as the callbackURL of e-mail links. */
+      appUrl: env.APP_URL,
       googleSignIn: Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET),
       push: c.get("services").push.enabled,
       /** Native push channels this deployment can deliver to (secrets configured). */
