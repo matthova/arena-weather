@@ -1,0 +1,13 @@
+// Build settings everyone shares. Per-developer values go in Config/Local.xcconfig (git-ignored):
+//
+//   WEATHER_ALERTS_TEAM = ABCDE12345            // your Apple Developer team id (needed for push on a device)
+//   WEATHER_ALERTS_BUNDLE_ID = com.you.weather  // a bundle id you own; must equal the API's APNS_BUNDLE_ID
+//   WEATHER_ALERTS_API_URL = http:/$()/192.168.1.20:8787   // the API from a device ($() keeps the // out of a comment)
+//
+// Then `xcodegen generate` again (Xcode re-reads the xcconfig on build anyway).
+
+WEATHER_ALERTS_TEAM =
+WEATHER_ALERTS_BUNDLE_ID = com.arenaweather.WeatherAlerts
+WEATHER_ALERTS_API_URL = http:/$()/localhost:8787
+
+#include? "Local.xcconfig"

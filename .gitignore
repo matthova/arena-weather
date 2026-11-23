@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.turbo/
+.wrangler/
+*.log
+.DS_Store
+.env
+.env.*
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+coverage/
+.tanstack/

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Weather alerts</string>
+    <string name="channel_alerts">Weather alerts</string>
+    <string name="channel_alerts_description">Notifications when one of your rules becomes true</string>
+</resources>

@@ -1,0 +1,35 @@
+# Copy to apps/api/.dev.vars for local development (that file is git-ignored).
+# In production set each with: pnpm --filter @arena-weather/api exec wrangler secret put <NAME>
+
+# Better Auth: random string of 32+ chars (openssl rand -base64 32)
+BETTER_AUTH_SECRET=change-me-to-a-long-random-string
+
+# Google OAuth (https://console.cloud.google.com/apis/credentials).
+# Redirect URI: <API_URL>/api/auth/callback/google
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+
+# Resend (https://resend.com) for verification e-mails. Leave empty locally: e-mails are logged instead.
+RESEND_API_KEY=
+
+# Web push VAPID keys: pnpm --filter @arena-weather/api vapid:generate
+VAPID_PUBLIC_KEY=
+VAPID_PRIVATE_KEY=
+
+# Android push (Firebase Cloud Messaging, HTTP v1). The whole service-account JSON key file on one
+# line (Firebase console → Project settings → Service accounts → Generate new private key); `\n`
+# inside private_key stays as the two characters \n. Leave empty: Android devices register but
+# receive nothing (GET /api/config reports pushChannels.fcm = false).
+FCM_SERVICE_ACCOUNT=
+
+# iOS/macOS push (APNs, token-based auth). Apple Developer → Keys → create an "Apple Push Notifications
+# service (APNs)" key and download the .p8 once. APNS_PRIVATE_KEY is the whole PEM file (multi-line is
+# fine here; for `wrangler secret put` pipe the file in, see README → iOS app). APNS_BUNDLE_ID (the
+# app's bundle id = APNs topic) and APNS_ENVIRONMENT are plain vars in wrangler.jsonc. Leave empty:
+# iOS devices register but receive nothing (GET /api/config reports pushChannels.apns = false).
+APNS_TEAM_ID=
+APNS_KEY_ID=
+APNS_PRIVATE_KEY=
+
+# Optional: protects POST /api/internal/run-checker (manual trigger of the cron job).
+CHECKER_TOKEN=

@@ -1,0 +1,15 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "arena-weather-web",
+  "main": "@tanstack/react-start/server-entry",
+  "compatibility_date": "2025-11-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+  // Every request to /api/* is forwarded by src/routes/api.$.ts so that the browser only ever
+  // talks to this origin (plain first-party cookies, no CORS). In production the forwarding goes
+  // over the service binding below; in local dev (no binding) it goes to API_ORIGIN over http.
+  "services": [{ "binding": "API", "service": "arena-weather-api" }],
+  "vars": {
+    "API_ORIGIN": "http://localhost:8787"
+  }
+}
